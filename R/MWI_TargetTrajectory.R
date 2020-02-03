@@ -1,9 +1,9 @@
 ## PROJECT:  COP20 MWI
 ## AUTHOR:   A.CHAFTEZ | USAID
 ## LICENSE:  MIT
-## PURPOSE:  evaludate targeting trajectory
+## PURPOSE:  evaluate targeting trajectory
 ## DATE:     2020-01-30
-## UPDATED:  2020-01-31
+## UPDATED:  2020-02-02
 
 #dependencies
   library(tidyverse)
@@ -18,6 +18,10 @@
   df_mwi <- list.files("~/Data", "OU_IM", full.names = TRUE) %>% 
     read_rds() %>% 
     filter(operatingunit == "Malawi")
+
+#fix double counted target for RTC (doubles PIH, due to mid year close out)
+  df_mwi <- df_mwi %>%
+    mutate(targets = ifelse(mech_code == 18234 & fiscal_year == 2019, NA, targets))
   
   df_mwi_tx <- df_mwi %>% 
     filter(indicator == "TX_CURR",
@@ -42,7 +46,7 @@
     mutate(type = "projected")
 
 #import Naomi model for FY20 PLHIV and TX_CURR_SUBNAT estimates
-  df_naomi <- read_csv("~/COP20/Naomi_Estimates 25012020_September 2020.CSV")
+  df_naomi <- read_csv("data/Naomi_Estimates 25012020_September 2020.CSV")
 
   df_naomi <- df_naomi %>% 
     filter(dataelement %in% c("IMPATT.PLHIV (SUBNAT, Age/Sex)", 
@@ -141,5 +145,5 @@
           legend.position = "none")
   
 #export
-  ggsave("~/COP20/MWI_TX_targeting.png", dpi = 300,
+  ggsave("out/plots/MWI_TX_targeting_v2.png", dpi = 300,
          height = 7.5, width = 13.33)
