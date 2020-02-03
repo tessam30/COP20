@@ -127,7 +127,7 @@
       scale_y_continuous(label = comma) +
       labs(x = NULL, y = NULL, title = "CLINICAL CASCADE TARGET ACHIEVEMENT FY19",
            subtitle = "Deloitte Regions | Males 15+",
-           caption = "FY19Q4i MSD\nCOP20 TZA Data Pack") + 
+           caption = "FY19Q4i MSD\nCOP19 TZA Data Pack") + 
       theme(text = element_text(family = "Gill Sans MT"),
             plot.caption = element_text(color = "gray30"))
   #export
