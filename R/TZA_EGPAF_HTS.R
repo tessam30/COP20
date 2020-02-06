@@ -26,21 +26,39 @@
 
 # IMPORT ------------------------------------------------------------------
 
-  path <- list.files("~/Data/", "Genie-Site", full.names = TRUE)
+  path <- list.files("~/Data/", "GENIE", full.names = TRUE)
   
-  df_tza <- read_msd(path)
-
+  #df_tza <- read_msd(path)
+  
+  df_tza <- read_rds(path)
 
 # MUNGE -------------------------------------------------------------------
 
   df_export <- df_tza %>% 
     filter(indicator %in% c("HTS_TST", "HTS_TST_POS"),
-           standardizeddisaggregate %in% c("Modality/Age Aggregated/Sex/Result", "Modality/Age/Sex/Result")) %>%
+           standardizeddisaggregate %in% c("Modality/Age Aggregated/Sex/Result", "Modality/Age/Sex/Result"),
+           fiscal_year %in% c(2018, 2019)) %>%
     group_by(operatingunit, snu1, psnu, psnuuid, primepartner, sitename, orgunituid, sitetype, 
              indicator, trendscoarse, sex, modality, fiscal_year) %>% 
     summarise_if(is.double, sum, na.rm = TRUE) %>% 
-    ungroup()
+    ungroup() 
+  
+  df_export <- df_export %>% 
+    reshape_msd(clean = TRUE) %>% 
+    mutate(trendscoarse = str_remove(trendscoarse, " (Age|Sex)"))
+  
+  df_site_target <- df_export %>% 
+    filter(indicator == "HTS_TST",
+           period == "FY19",
+           period_type == "targets") %>% 
+    group_by(orgunituid) %>% 
+    summarise(fy19_hts_full_site_target = sum(val, na.rm = TRUE)) %>% 
+    ungroup() %>% 
+    arrange(fy19_hts_full_site_target) %>% 
+    mutate(fy19_hts_full_site_target_cum_share = cume_dist(fy19_hts_full_site_target))
+  
+  df_export <- left_join(df_export, df_site_target)
 
 # EXPORT ------------------------------------------------------------------
 
-  write_csv(df_export, "out/data/TZA_EGPAF_HTS.csv", na = "")
+  write_csv(df_export, "out/data/TZA_EGPAF_HTS_v2.csv", na = "")

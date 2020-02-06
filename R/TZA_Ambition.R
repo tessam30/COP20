@@ -87,7 +87,7 @@
     
   #key clinical cascade indicators for 15+ men with target achievement by each Deloitte region
     df_dlt_m_u15 <- df_tza %>% 
-      filter(fundingagency == "USAID",
+      filter(#fundingagency == "USAID",
              snu1 %in% dlt_regions,
              fiscal_year == 2019,
              indicator %in% cascade,
