@@ -4,7 +4,7 @@
 ## PURPOSE: visualize trends in TX for peds
 ## NOTE:    adapted from FY19AgencySelfAssessments/FY19Q4_TZA_TX_Comparison.R
 ## DATE:    2020-02-09
-## UPDATED: 
+## UPDATED: 2020-02-10
 
 
 # DEPENDENCIES ------------------------------------------------------------
@@ -34,7 +34,7 @@ df_tza <- list.files("~/Data", "OU_IM", full.names = TRUE) %>%
              standardizeddisaggregate %in% c("Age/Sex/HIVStatus", "Age Aggregated/Sex/HIVStatus"),
              fundingagency == "USAID",
              !is.na(partner),
-             fiscal_year > 2017,
+             #fiscal_year > 2017,
              trendscoarse == "<15")
     
   #aggregate and reshape
