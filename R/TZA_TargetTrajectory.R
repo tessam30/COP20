@@ -138,7 +138,7 @@
     scale_color_manual(name = NULL,
                        breaks = fct_rev(df_viz$type),
                        values = c("#335b8e", "#6ca18f", "#cc5234")) +
-    labs(x = NULL, y = NULL, title = "COP20 TANZNIA | TREATMENT TARGETING",
+    labs(x = NULL, y = NULL, title = "COP20 TANZANIA | TREATMENT TARGETING",
          caption = "Sources: FY19Q4c MSD; Naomi 2020 Estimates 2020-02-07") +
     theme_minimal()+
     theme(text = element_text(family = "Calibri Light", size = 16),

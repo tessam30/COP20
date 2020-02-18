@@ -3,7 +3,7 @@
 ## LICENSE: MIT
 ## PURPOSE: Trends in Peds Cascade
 ## DATE:    2020-02-03
-## UPDATED: 2020-02-09
+## UPDATED: 2020-02-17
 
 # DEPENDENCIES ------------------------------------------------------------
 
@@ -23,11 +23,19 @@
 
 # IMPORT ------------------------------------------------------------------
 
-  df_tza <- list.files("~/Data", "PSNU_IM", full.names = TRUE) %>% 
+  path <-"data/PEPFAR-Data-Genie-OUByIMs-2020-02-17.zip"
+  
+  df_genie <- path %>% 
+    read_msd(remove_txt = FALSE) %>% 
+    filter(fiscal_year == 2020)
+  
+  df_msd <- list.files("~/Data", "OU_IM", full.names = TRUE) %>% 
     read_rds() %>% 
     filter(operatingunit == "Tanzania")
 
 # MUNGE -------------------------------------------------------------------
+  
+  df_tza <- bind_rows(df_msd, df_genie)
   
   df_viz <- df_tza %>% 
     filter(indicator %in% cascade,
@@ -42,7 +50,7 @@
 
     plot_ind <- function(df, partner_sel = NULL, snu_sel = NULL){
         
-      subt <- "FY17-19 | Tanzania"
+      subt <- "FY17-20 | Tanzania"
       save <- paste0("TZA_Peds_CascadeInd", partner_sel, snu_sel, ".png")
       
       if(!is.null(partner_sel)) {
@@ -82,7 +90,7 @@
         labs(x = NULL, y = NULL,
              title = "PEDIATRIC CLINICAL CASCADE TRENDS",
              subtitle = subt,
-             caption = "Source: FY19Q4c MSD") +
+             caption = "Source: DATIM Genie Pull [2020-02-17]") +
         theme_minimal() +
         theme(legend.position = "none",
               text = element_text(family = "Calibri Light", size = 12),
@@ -97,7 +105,7 @@
       return(v)
     }  
 
-  #peds nationally
+  #peds nationally  
     plot_ind(df_viz)
     
   #peds for Deloitte & EGPAF
