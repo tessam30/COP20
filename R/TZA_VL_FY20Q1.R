@@ -3,7 +3,7 @@
 ## LICENSE: MIT
 ## PURPOSE: VL by age band
 ## DATE:    2020-02-17
-## UPDATED: 
+## UPDATED: 2020-02-19
 
 # DEPENDENCIES ------------------------------------------------------------
 
@@ -71,20 +71,23 @@ df_viz <- df_genie_vl %>%
 
 # PLOT --------------------------------------------------------------------
 
+#pal <- c("#26456a", "#335B8E", "#739bcc") #blue mono
+pal <- c("#F5796D", "#FBF583", "#64C195") #red yellow green
+
 #VL coverage
 df_viz %>% 
   filter(ind == "VL Coverage") %>% 
   ggplot(aes(age, snu1, fill = type), na.rm = TRUE) +
   geom_tile(color = "white") +
   geom_text(aes(label = lab), na.rm = TRUE, size = 2.5,
-            family = "Gill Sans MT", color = "white") +
+            family = "Gill Sans MT", color = "gray30") +
   facet_wrap(. ~ sex) +
   labs(x = NULL, y = NULL, 
        #title = "FY20Q1 Tanzania VL Coverage",
        caption = "Source: FY20Q1 Genie Pull [2020-02-17]") +
   theme_minimal() +
   scale_x_discrete(expand = c(0.005, 0.005),  position = "top") +
-  scale_fill_manual(values =  c("#26456a", "#335B8E", "#739bcc"), name = NULL, na.translate = FALSE) +
+  scale_fill_manual(values =  pal, name = NULL, na.translate = FALSE) +
   theme(text = element_text(family = "Gill Sans MT"),
         plot.caption = element_text(color = "gray30"),
         panel.grid = element_blank(),
@@ -98,14 +101,14 @@ df_viz %>%
   ggplot(aes(age, snu1, fill = type), na.rm = TRUE) +
   geom_tile(color = "white") +
   geom_text(aes(label = lab), na.rm = TRUE, size = 2.5,
-            family = "Gill Sans MT", color = "white") +
+            family = "Gill Sans MT", color = "gray30") +
   facet_wrap(. ~ sex) +
   labs(x = NULL, y = NULL, 
        #title = "FY20Q1 Tanzania VL Suppression",
        caption = "Source: FY20Q1 Genie Pull [2020-02-17]") +
   theme_minimal() +
   scale_x_discrete(expand = c(0.005, 0.005),  position = "top")+
-  scale_fill_manual(values =  c("#26456a", "#335B8E", "#739bcc"), name = NULL, na.translate = FALSE) +
+  scale_fill_manual(values =  pal, name = NULL, na.translate = FALSE) +
   theme(text = element_text(family = "Gill Sans MT"),
         plot.caption = element_text(color = "gray30"),
         panel.grid = element_blank(),

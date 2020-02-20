@@ -3,7 +3,7 @@
 ## LICENSE: MIT
 ## PURPOSE: Trends in Peds Index testing cascade
 ## DATE:    2020-02-17
-## UPDATED: 
+## UPDATED: 2020-02-19
 
   path <-"data/PEPFAR-Data-Genie-OUByIMs-2020-02-17.zip"
   
@@ -91,7 +91,7 @@ df_pedscontacts <- df_tza %>%
                                    primepartner == "Trustees Of Columbia University In The City Of New York" ~ "Columbia University",
                                    primepartner == "TBD" ~ "TBD"
                                    ),
-          value  = case_when(type == "Child Contacts Lists by Adults Females" ~ as.character(round(value, 1)),
+          value  = case_when(type == "Child Contacts Listed by Adults Females" ~ as.character(round(value, 1)),
                              TRUE ~ percent(value, 1)),
           type = factor(type, c("Adult Females Accepting Index Testing", "Child Contacts Listed by Adults Females",
                                 "Child Contacts Accepting Testing", "Child Index Positvity")))
