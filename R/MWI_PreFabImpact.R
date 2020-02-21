@@ -142,7 +142,6 @@
  
  
  
- 
  #look at yoy change
  set.seed(42)
  
@@ -170,10 +169,3 @@
  
  ggsave("out/plots/MWI_PreFabImpact_yoy.png", dpi = 330,
         width = 6, height = 5.625)
-
-# Analysis II -------------------------------------------------------------
-
-  
-  
-  
-   
