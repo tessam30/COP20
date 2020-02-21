@@ -75,6 +75,8 @@
 
 # JOIN --------------------------------------------------------------------
 
+  ##growth 2Q's before/after
+    
   #join DHA data + prefab info
     df_join_onlyprefab <- df_prefab %>% 
       left_join(df_dha) %>% 
@@ -87,11 +89,34 @@
       ungroup() %>% 
       mutate(type = fct_rev(type))
 
+  #growth 1 year before and after
+  #identify FY19Q1 prefab sites
+    lst_prefab_19q1 <- df_prefab %>% 
+      distinct(psnu, sitename, completion_date) %>% 
+      mutate(qtr_complete = quarter(completion_date, with_year = TRUE, fiscal_start = 10)) %>% 
+      filter(qtr_complete == "2019.1") %>% 
+      pull(sitename)
+    
+    df_dha_yoy <- df_dha %>% 
+      filter(quarter %in% c(2018.1, 2019.1, 2020.1)) %>% 
+      mutate(prefab_19q1 = ifelse(sitename %in% lst_prefab_19q1, "FY19Q1 Pre-Fab Sites", "Normal Sites")) %>% 
+      arrange(psnu, sitename, quarter)
+    
+  #calc growth for pre/post prefab
+    df_dha_yoy <- df_dha_yoy %>% 
+      group_by(sitename) %>% 
+      mutate(growth = (tx_curr - lag(tx_curr))/lag(tx_curr),
+             growth = na_if(growth, Inf)) %>% 
+      ungroup() %>% 
+      filter(quarter != 2018.1) %>% 
+      mutate(type = case_when(quarter == 2019.1 ~ "FY18-19",
+                              quarter == 2020.1 ~ "FY19-20"))
 # PLOT --------------------------------------------------------------------
 
-  set.seed(42)
     
   #look at only pre fab sites
+  set.seed(42)
+  
   df_join_onlyprefab %>% 
     ggplot(aes(type, growth)) +
     geom_hline(yintercept = 0, color = "gray30") +
@@ -116,55 +141,39 @@
  write_csv(df_join_onlyprefab, "out/data/MWI_PreFabImpact_data.csv", na = "")
  
  
+ 
+ 
+ #look at yoy change
+ set.seed(42)
+ 
+ df_dha_yoy %>% 
+   ggplot(aes(type, growth)) +
+   geom_hline(yintercept = 0, color = "gray30") +
+   geom_boxplot(na.rm = TRUE, color = 'gray50', outlier.alpha = 0) + 
+   geom_jitter(aes(color = type, alpha = .1), size = 2.5, width = 0.25, na.rm = TRUE) +
+   facet_grid(. ~ prefab_19q1) +
+   scale_y_continuous(labels = percent_format(1),limits = c(-1, 1.5)
+   ) +
+   scale_x_discrete(position = "top") +
+   scale_color_manual(values = c("#95a5a6", "#2980b9")) +
+   labs(x = NULL, y = "TX_CURR growth rate",
+        title = "Limited impact of FY19Q1 Pre-Fabs",
+        subtitle = "lower avg TX_CURR growth in sites post pre-fab install",
+        caption = "MoH TX_CURR FY18Q1-FY20Q1 \nMalawi Pre-fab clinic inventory 2019-04-17") +
+   theme_minimal() +
+   theme(legend.position = "none",
+         text = element_text(family = "Gill Sans MT"),
+         axis.text.x = element_text(face = "bold"),
+         plot.caption = element_text(size = 8, color = "gray30"),
+         strip.placement = "outside",
+         strip.text = element_text(face = "bold"))
+ 
+ ggsave("out/plots/MWI_PreFabImpact_yoy.png", dpi = 330,
+        width = 6, height = 5.625)
 
 # Analysis II -------------------------------------------------------------
 
-  lst_prefab_19q1 <- df_prefab %>% 
-   distinct(psnu, sitename, completion_date) %>% 
-   mutate(qtr_complete = quarter(completion_date, with_year = TRUE, fiscal_start = 10)) %>% 
-   filter(qtr_complete == "2019.1") %>% 
-   pull(sitename)
-
- df_dha_yoy <- df_dha %>% 
-   filter(quarter %in% c(2018.1, 2019.1, 2020.1)) %>% 
-   mutate(prefab_19q1 = ifelse(sitename %in% lst_prefab_19q1, "FY19Q1 Pre-Fab Sites", "Normal Sites")) %>% 
-   arrange(psnu, sitename, quarter)
- 
- #calc growth for pre/post prefab
- df_dha_yoy <- df_dha_yoy %>% 
-   group_by(sitename) %>% 
-   mutate(growth = (tx_curr - lag(tx_curr))/lag(tx_curr),
-          growth = na_if(growth, Inf)) %>% 
-   ungroup() %>% 
-   filter(quarter != 2018.1) %>% 
-   mutate(type = case_when(quarter == 2019.1 ~ "FY18-19",
-                           quarter == 2020.1 ~ "FY19-20"))
   
-   set.seed(42)
-   
-   #look at yoy change
-   df_dha_yoy %>% 
-     ggplot(aes(type, growth)) +
-     geom_hline(yintercept = 0, color = "gray30") +
-     geom_boxplot(na.rm = TRUE, color = 'gray50', outlier.alpha = 0) + 
-     geom_jitter(aes(color = type, alpha = .1), size = 2.5, width = 0.25, na.rm = TRUE) +
-     facet_grid(. ~ prefab_19q1) +
-     scale_y_continuous(labels = percent_format(1),limits = c(-1, 1.5)
-                        ) +
-     scale_x_discrete(position = "top") +
-     scale_color_manual(values = c("#95a5a6", "#2980b9")) +
-     labs(x = NULL, y = "TX_CURR growth rate",
-          title = "Limited impact of FY19Q1 Pre-Fabs",
-          subtitle = "lower avg TX_CURR growth in sites post pre-fab install",
-          caption = "MoH TX_CURR FY18Q1-FY20Q1 \nMalawi Pre-fab clinic inventory 2019-04-17") +
-     theme_minimal() +
-     theme(legend.position = "none",
-           text = element_text(family = "Gill Sans MT"),
-           axis.text.x = element_text(face = "bold"),
-           plot.caption = element_text(size = 8, color = "gray30"),
-           strip.placement = "outside",
-           strip.text = element_text(face = "bold"))
-   
-   ggsave("out/plots/MWI_PreFabImpact_yoy.png", dpi = 330,
-          width = 6, height = 5.625)
+  
+  
    
