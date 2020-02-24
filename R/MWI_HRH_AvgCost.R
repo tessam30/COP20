@@ -2,7 +2,7 @@
 ## AUTHOR:   A.CHAFTEZ | USAID
 ## LICENSE:  MIT
 ## PURPOSE:  compare HRH inventory
-## DATE:     2020-02-11
+## DATE:     2020-02-24
 ## UPDATED:  
 
 
@@ -281,4 +281,4 @@
            caption = "Source: Malawi DHA FY18-20, FY19 Malawi HRH Inventory") +
       theme(plot.caption = element_text(color = "gray30", size = 10))
    
-    
+    g
