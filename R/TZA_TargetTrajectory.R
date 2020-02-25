@@ -1,9 +1,10 @@
-## PROJECT:  COP20 MWI
+## PROJECT:  COP20 TZA
 ## AUTHOR:   A.CHAFTEZ | USAID
 ## LICENSE:  MIT
 ## PURPOSE:  evaluate targeting trajectory
-## DATE:     2020-01-30
-## UPDATED:  2020-02-02
+## NOTE:     adapted from work in Malawi (MWI_TargetTrajectory)
+## DATE:     2020-02-10
+## UPDATED:  
 
 #dependencies
   library(tidyverse)
@@ -14,16 +15,13 @@
 #definte color palette
   pal <- add_color(palette = "woods")
 
-#import MWI TX data
-  df_mwi <- list.files("~/Data", "OU_IM", full.names = TRUE) %>% 
+#import tza TX data
+  df_tza <- list.files("~/Data", "OU_IM", full.names = TRUE) %>% 
     read_rds() %>% 
-    filter(operatingunit == "Malawi")
+    filter(operatingunit == "Tanzania")
 
-#fix double counted target for RTC (doubles PIH, due to mid year close out)
-  df_mwi <- df_mwi %>%
-    mutate(targets = ifelse(mech_code == 18234 & fiscal_year == 2019, NA, targets))
-  
-  df_mwi_tx <- df_mwi %>% 
+#TX agg
+  df_tza_tx <- df_tza %>% 
     filter(indicator == "TX_CURR",
            standardizeddisaggregate == "Total Numerator") %>% 
     group_by(indicator, fiscal_year) %>% 
@@ -33,20 +31,20 @@
     mutate(value = na_if(value, 0))
 
 #extract value for plotting projections from FY19 result
-  df_tx_19 <- df_mwi_tx %>% 
+  df_tx_19 <- df_tza_tx %>% 
     filter(type == "cumulative",
            fiscal_year == 2019) %>% 
     mutate(type = "projected")
 
 #projection of trajectory to meet FY20 target
-  df_tx_20targ <- df_mwi_tx %>% 
+  df_tx_20targ <- df_tza_tx %>% 
     filter((type == "targets" & fiscal_year == 2020) | 
            (type == "cumulative" & fiscal_year == 2019)) %>% 
     rename(target_gap = value) %>% 
     mutate(type = "projected")
 
 #import Naomi model for FY20 PLHIV and TX_CURR_SUBNAT estimates
-  df_naomi <- read_csv("data/Naomi_Estimates 25012020_September 2020.CSV")
+  df_naomi <- read_csv("data/naomi export_September 2020_fromDP.csv")
 
   df_naomi <- df_naomi %>% 
     filter(dataelement %in% c("IMPATT.PLHIV (SUBNAT, Age/Sex)", 
@@ -73,6 +71,10 @@
     mutate(indicator = "PLHIV",
            PLHIV_90pct = PLHIV * .95*.95,
            PLHIV_81pct = PLHIV * .9*.9)
+  
+  
+  PLHIV_81pct_lab <- paste0(round(df_naomi_plhiv$PLHIV_81pct /1000000,2), "m (81% PLHIV on ART)")
+  PLHIV_90pct_lab <- paste0(round(df_naomi_plhiv$PLHIV_90pct /1000000,2), "m (90% PLHIV on ART)")
 
 #extract PLHIV gap for trajectory for reaching 2nd 95
   df_plhiv_gap <- df_naomi %>% 
@@ -88,14 +90,14 @@
     )
 
 #bind data extracts together
-  df_viz <- bind_rows(df_mwi_tx, df_naomi_subnat, df_naomi_plhiv, df_plhiv_gap, df_tx_20targ, df_fy21)
+  df_viz <- bind_rows(df_tza_tx, df_naomi_subnat, df_naomi_plhiv, df_plhiv_gap, df_tx_20targ, df_fy21)
 
 #viz labeling
   df_viz <- df_viz %>% 
-    mutate(lab = case_when(indicator == "TX_CURR" ~ paste0(round(value/1000,0), "k"),
-                           TX_CURR_SUBNAT > 0 & fiscal_year == 2020 ~ paste0(round(TX_CURR_SUBNAT /1000,0), "k"),
-                           PLHIV_gap > 0 & fiscal_year == 2020 ~ paste0(round(PLHIV_gap /1000,0), "k")),
-           lab = na_if(lab, "NAk"),
+    mutate(lab = case_when(indicator == "TX_CURR" ~ paste0(round(value/1000000,2), "m"),
+                           TX_CURR_SUBNAT > 0 & fiscal_year == 2020 ~ paste0(round(TX_CURR_SUBNAT /1000000,2), "m"),
+                           PLHIV_gap > 0 & fiscal_year == 2020 ~ paste0(round(PLHIV_gap /1000000,2), "m")),
+           lab = na_if(lab, "NAm"),
            lab2 = case_when(indicator == "TX_CURR_SUBNAT" ~ "Naomi projection",
                             indicator == "PLHIV" & PLHIV_gap > 0 ~ "90% coverage",
                             type == "targets" & fiscal_year == 2020 ~ "COP19 target"),
@@ -119,25 +121,25 @@
     geom_text(aes(label = lab), na.rm = TRUE, vjust = -1.2, color = "gray30", family = "Calibri Light") +
     geom_text(aes(y = TX_CURR_SUBNAT, label = lab), na.rm = TRUE, vjust = -1.2, color = "gray30", family = "Calibri Light") +
     geom_text(aes(y = PLHIV_gap, label = lab), na.rm = TRUE, vjust = -1.2, color = "gray30", family = "Calibri Light") +
-    geom_text(aes(x = 2017.4, y = PLHIV_90pct, label = "964k (90% PLHIV on ART)"), 
+    geom_text(aes(x = 2017.4, y = PLHIV_90pct, label = PLHIV_90pct_lab), 
               na.rm = TRUE, vjust = -1, color = "gray50", family = "Calibri Light") +
-    geom_text(aes(x = 2017.4, y = PLHIV_81pct, label = "866k (81% PLHIV on ART)"), 
+    geom_text(aes(x = 2017.4, y = PLHIV_81pct, label = PLHIV_81pct_lab), 
               na.rm = TRUE, vjust = -1, color = "gray50", family = "Calibri Light") +
     geom_text(aes(x = lab2_x, y =lab2_y, label = lab2),
               na.rm = TRUE, hjust = -.1, vjust = 1.2, size = 4,
               color = "gray30", family = "Calibri Light") +
-    geom_text(aes(x = 2017.5, y = 725175, label = "COP targets"),
+    geom_text(aes(x = 2017.5, y = 1142500, label = "COP targets"),
               na.rm = TRUE, hjust = 1, vjust = -1, size = 4,
               color = "#cc5234", family = "Calibri Light") +
-    geom_text(aes(x = 2017.5, y = 692404, label = "MER results"),
+    geom_text(aes(x = 2017.5, y = 1003500, label = "MER results"),
               na.rm = TRUE, hjust = 0, vjust = 1.5, size = 4,
               color = "#335b8e", family = "Calibri Light") +
     scale_y_continuous(labels = comma) + 
     scale_color_manual(name = NULL,
                        breaks = fct_rev(df_viz$type),
                        values = c("#335b8e", "#6ca18f", "#cc5234")) +
-    labs(x = NULL, y = NULL, title = "COP20 MALAWI | TREATMENT TARGETING",
-         caption = "Sources: FY19Q4i MSD; Naomi 2020 Estimates 2020-01-25") +
+    labs(x = NULL, y = NULL, title = "COP20 TANZANIA | TREATMENT TARGETING",
+         caption = "Sources: FY19Q4c MSD; Naomi 2020 Estimates 2020-02-07") +
     theme_minimal()+
     theme(text = element_text(family = "Calibri Light", size = 16),
           plot.title = element_text(family = "Calibri", face = "bold", size = 24, color = "#6ca18f"),
@@ -145,5 +147,5 @@
           legend.position = "none")
   
 #export
-  ggsave("out/plots/MWI_TX_targeting_v2.png", dpi = 300,
+  ggsave("out/plots/TZA_TX_targeting_v2.png", dpi = 300,
          height = 7.5, width = 13.33)

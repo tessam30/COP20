@@ -3,13 +3,14 @@
 ## LICENSE: MIT
 ## PURPOSE: Provide targets for Ambition funding
 ## DATE:    2020-02-01
-
+## UPDATED: 2020-02-02
 
 # DEPENDENCIES ------------------------------------------------------------
 
   library(tidyverse)
   library(scales)
   library(extrafont)
+  library(readxl)
 
 
 # GLOBAL VARIABLES --------------------------------------------------------
@@ -18,8 +19,11 @@
     folderpath_msd <- "~/Data"
     path_msd <- list.files(folderpath_msd, "PSNU_IM", full.names = TRUE)
     
+  #data pack path
+    dp_path <- "data/TZ COP 19 Data Pack 20190502_sitetool_May28_100pm_forUploadv5.xlsx"
+    
   #output
-    folderpath_out <- "~/COP20/out"
+    folderpath_out <- "out"
     
   #Deloitte regions
     dlt_regions <- c("Ruvuma", "Mtwara", "Njombe", "Iringa", "Morogoro", "Lindi")
@@ -44,19 +48,47 @@
     medblue <- "#0067B9"
     usaidred <- "#BA0C2F"
     
+    
 # IMPORT ------------------------------------------------------------------
 
   #import MSD
-    df_tza <- read_rds() %>% 
+    df_tza <- read_rds(path_msd) %>% 
       filter(operatingunit == "Tanzania")
     
+    
+# IMPORT AND MUNGE PLHIV FROM DP ------------------------------
+    
+  #import COP20 DP
+    df_plhiv <- read_excel(dp_path, sheet = "Spectrum")
+    
+  #clean columns
+    df_plhiv <-  df_plhiv %>% 
+      rename_all(tolower) %>% 
+      filter(str_detect(dataelement, "PLHIV")) %>% 
+      select(psnuuid, age = categoryoption_name_1, sex = categoryoption_name_2, value)
+    
+  #add age trendscourse
+    df_plhiv <- df_plhiv %>% 
+      mutate(trendscoarse = ifelse(age %in% c("<01", "01-04", "05-09", "10-14"),  "<15", "15+")) 
+  
+  #aggregate to SNU1 level for Males
+    df_plhiv_m <- df_tza %>% 
+      distinct(snu1, psnu, psnuuid) %>% 
+      right_join(df_plhiv) %>% 
+      filter(sex == "Male") %>% 
+      group_by(snu1, trendscoarse) %>% 
+      summarize(plhiv = sum(value, na.rm = TRUE)) %>% 
+      ungroup() %>% 
+      mutate(indicator = "TX_CURR")
+      
+  
 
 # FINDING MEN -------------------------------------------------------------
     
   #key clinical cascade indicators for 15+ men with target achievement by each Deloitte region
     df_dlt_m_u15 <- df_tza %>% 
-      filter(fundingagency == "USAID",
-             primepartner == "DELOITTE CONSULTING LIMITED",
+      filter(#fundingagency == "USAID",
+             snu1 %in% dlt_regions,
              fiscal_year == 2019,
              indicator %in% cascade,
              standardizeddisaggregate %in% c("Modality/Age/Sex/Result", "Age/Sex/HIVStatus"),
@@ -69,6 +101,10 @@
       mutate(indicator = factor(indicator, cascade),
              achv = cumulative/targets)
     
+  #add plhiv
+    df_dlt_m_u15 <- left_join(df_dlt_m_u15, df_plhiv_m) %>% 
+      mutate(indicator = factor(indicator, cascade))
+    
   #oder by TX_CURR size
     snu_order <- df_dlt_m_u15 %>% 
       filter(indicator == "TX_CURR") %>% 
@@ -79,7 +115,8 @@
     df_dlt_m_u15 %>% 
       ggplot(aes(factor(snu1, rev(snu_order)), cumulative)) +
       geom_blank(aes(y = targets * 1.2)) + 
-      geom_col(fill = lightblue) +
+      geom_col(aes(factor(snu1, rev(snu_order)), plhiv), color = lightblue, size = 1, fill = NA, na.rm = TRUE) +
+      geom_col(fill = lightblue, na.rm = TRUE) +
       geom_hline(yintercept = 0) +
       geom_errorbar(aes(ymin = targets, ymax = targets), size = 1, width = .5, color = usaidblue) + 
       geom_text(aes(y = targets, label = percent(achv, 1)), vjust = -2.8,
@@ -89,13 +126,13 @@
       theme_minimal() +
       scale_y_continuous(label = comma) +
       labs(x = NULL, y = NULL, title = "CLINICAL CASCADE TARGET ACHIEVEMENT FY19",
-           subtitle = "Deloitte | Males 15+",
-           caption = "FY19Q4i MSD") + 
+           subtitle = "Deloitte Regions | Males 15+",
+           caption = "FY19Q4i MSD\nCOP19 TZA Data Pack") + 
       theme(text = element_text(family = "Gill Sans MT"),
             plot.caption = element_text(color = "gray30"))
   #export
     write_csv(df_dlt_m_u15, file.path(folderpath_out, "TZA_FY19_Deloitte_Cascade_Males_o15v2.csv", na = ""))
-    ggsave(file.path(folderpath_out, "TZA_FY19_Deloitte_Cascade_Males_o15.png"),
+    ggsave(file.path(folderpath_out, "plots","TZA_FY19_Deloitte_Cascade_Males_o15_updated.png"),
            dpi = 300, width = 10, height = 5.66)
     
   #key clinical cascade indicators for all men with target achievement by each Deloitte region
